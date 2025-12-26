@@ -3,7 +3,7 @@
 This package reproduces all results from the paper "India’s SECI: A Shaky Ladder for India’s Sustainability and Net-Zero Climb".
 
 ## Files
-- data.csv: State-wise SECI parameters, scores, socio-economic variables (sources: NITI Aayog 2022, ISFR 2023, NITI MPI 2023, MoSPI).
+- Raw_data.csv: State-wise SECI parameters, scores, socio-economic variables (sources: NITI Aayog 2022, ISFR 2023, NITI MPI 2023, MoSPI).
 - replication_code.py: Simulations, ranks, Kendall Tau, K-means, OLS regressions, visuals.
 - rank_shifts_top10.png & volatility_clusters.png: Generated figures.
 
