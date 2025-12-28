@@ -1,16 +1,6 @@
-# Replication Package: India's SECI - DISCOM Weight Bias Analysis
-# Core Problem: The NITI Aayog’s SECI (Round 1) has a "weight defect" where 40% of the total score is attributed solely to the financial performance of power distribution companies (DISCOMs). This imbalance rewards "structural legacy" rather than actual progress toward renewable energy and Net-Zero goals
-This package reproduces all results from the paper "India’s SECI: A Shaky Ladder for India’s Sustainability and Net-Zero Climb".
-
-## Files
-- Raw_data.csv: State-wise SECI parameters, scores, socio-economic variables (sources: NITI Aayog 2022, ISFR 2023, NITI MPI 2023, MoSPI).
-- replication_code.py: Simulations, ranks, Kendall Tau, K-means, OLS regressions, visuals.
-- rank_shifts_top10.png & volatility_clusters.png: Generated figures.
-
-## Run
-python replication_code.py
-
-Outputs match paper: Tau ~0.658 (10%), literacy significant, forest barrier, high volatility in 7 states.
-
+#Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways
+Data Integrity: "Socio-economic data is verified against FSI 2021 and NITI Aayog 2021 reports.
+Sample Clarity: "We explicitly distinguish between the simulation universe (N=28) and the regression sample (n=27) to avoid bias."
+Finding Transparency: "Contrary to bivariate correlations, Industrial Share is noted as non-significant in multivariate models; we prioritize Human Capital Depth as the primary explanatory variable."
 Data Availability: Public official sources linked in paper.
 License: CC-BY 4.0
