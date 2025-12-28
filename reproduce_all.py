@@ -1,20 +1,28 @@
-# replicate_seci_paper.py
-# Full replication package for "Reassessing India’s State Energy and Climate Index"
-# Authors' methodology (focused reweighting, fragility audit, socio-economic drivers)
-# 100% transparent and self-contained. Run as-is.
-# Python 3.8+ required.
+# enhanced_replicate_seci_paper.py
+# Enhanced full replication package with CSV exports, interactive plots, and robustness checks
+# 100% self-contained and transparent. Run as-is (Python 3.8+).
 
 import pandas as pd
 import numpy as np
 from scipy.stats import kendalltau, pearsonr
 import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import io
+import os
 
-print("=== Loading Data ===")
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+except ImportError:
+    print("Plotly not installed. Install with: pip install plotly")
+    exit()
 
-# SECI Round 1 parameter scores and original ranks
+print("=== Enhanced Replication Package Started ===")
+
+# Create output directory
+os.makedirs("replication_outputs", exist_ok=True)
+
+# Load data (embedded CSVs)
 seci_csv = """Rank,State,DISCOM,AAR,CEI,EE,ES,NI,SECI_score_original
 1,Goa,63.4,59.6,62.4,16.6,43.7,12.4,51.4
 2,Gujarat,72.7,52.4,39.2,40.1,35.1,5.5,50.1
@@ -45,11 +53,9 @@ seci_csv = """Rank,State,DISCOM,AAR,CEI,EE,ES,NI,SECI_score_original
 27,Nagaland,35.9,32.9,12.2,26.4,40.0,3.4,27.9
 28,Arunachal Pradesh,31.1,43.2,5.8,19.8,49.0,1.1,27.0"""
 
-df_seci = pd.read_csv(io.StringIO(seci_csv))
-df_seci = df_seci.set_index("State")
-print("SECI data loaded (28 states)")
+df_seci = pd.read_csv(pd.compat.StringIO(seci_csv)).set_index("State")
 
-# Socio-economic data
+# Socio-economic and NFHS data (same as before)
 socio_csv = """State,Per_Capita_Income_thou,Literacy_pct,Poverty_pct,Industrial_Share_pct,Forest_pct
 Goa,431,92,3.8,25,60.2
 Gujarat,220,82,12.7,35,9.7
@@ -78,9 +84,8 @@ Meghalaya,90,80,20.0,18,76.0
 Nagaland,100,85,15.0,15,75.3
 Mizoram,150,95,5.0,15,84.5
 Arunachal Pradesh,120,75,18.0,20,79.3"""
-df_socio = pd.read_csv(io.StringIO(socio_csv)).set_index("State")
+df_socio = pd.read_csv(pd.compat.StringIO(socio_csv)).set_index("State")
 
-# NFHS-5 proxies (not used in main regressions but available)
 nfhs_csv = """State,Mean_Years_Schooling,Women_10plus_Yrs_Schooling_pct,Households_Internet_pct
 Goa,9.6,68.3,68.8
 Gujarat,8.2,47.8,52.4
@@ -109,93 +114,130 @@ Meghalaya,7.5,45.6,35.4
 Nagaland,8.7,52.3,42.1
 Mizoram,9.4,65.8,48.9
 Arunachal Pradesh,7.2,40.8,38.2"""
-df_nfhs = pd.read_csv(io.StringIO(nfhs_csv)).set_index("State")
+df_nfhs = pd.read_csv(pd.compat.StringIO(nfhs_csv)).set_index("State")
 
-print("=== Reweighting Simulations (Focused Net-Zero) ===")
-
-# Original weights
-weights_base = {'DISCOM': 0.40, 'AAR': 0.15, 'CEI': 0.15, 'EE': 0.15, 'ES': 0.08, 'NI': 0.07}
-
+# Weight calculation function
 def calc_score(row, weights):
-    return (row['DISCOM'] * weights['DISCOM'] +
-            row['AAR'] * weights['AAR'] +
-            row['CEI'] * weights['CEI'] +
-            row['EE'] * weights['EE'] +
-            row['ES'] * weights['ES'] +
-            row['NI'] * weights['NI'])
+    return sum(row[col] * weights[col] for col in weights)
 
-# Baseline 40%
+# Baseline
+weights_base = {'DISCOM': 0.40, 'AAR': 0.15, 'CEI': 0.15, 'EE': 0.15, 'ES': 0.08, 'NI': 0.07}
 df_seci['score_40'] = df_seci.apply(calc_score, axis=1, weights=weights_base)
 df_seci['rank_40'] = df_seci['score_40'].rank(ascending=False).astype(int)
 
-# Focused scenarios
-for discom_pct in [30, 20, 10]:
+# Focused Net-Zero scenarios (Appendix A4)
+scenarios = []
+weights_table = []
+for discom_pct in [40, 30, 20, 10]:
     discom_w = discom_pct / 100
     excess = 0.40 - discom_w
-    boost = excess / 3
-    weights = {'DISCOM': discom_w, 'AAR': 0.15, 'CEI': 0.15 + boost,
-               'EE': 0.15 + boost, 'ES': 0.08 + boost, 'NI': 0.07}
+    boost = excess / 3 if discom_pct < 40 else 0
+    weights = {
+        'DISCOM': discom_w,
+        'AAR': 0.15,
+        'CEI': 0.15 + boost,
+        'EE': 0.15 + boost,
+        'ES': 0.08 + boost,
+        'NI': 0.07
+    }
     score_col = f'score_{discom_pct}'
     rank_col = f'rank_{discom_pct}'
     df_seci[score_col] = df_seci.apply(calc_score, axis=1, weights=weights)
     df_seci[rank_col] = df_seci[score_col].rank(ascending=False).astype(int)
-    print(f"\nWeights for {discom_pct}% DISCOM: {weights}")
+    scenarios.append((score_col, rank_col))
+    weights_table.append({'DISCOM_pct': discom_pct, **weights})
 
-print("\nExample rank shifts (Table A5 style):")
-examples = ['Punjab', 'Gujarat', 'Maharashtra', 'Tamil Nadu', 'Chhattisgarh']
-print(df_seci.loc[examples, ['rank_40', 'rank_30', 'rank_20', 'rank_10']])
+# Export Appendix tables
+# A3: Scores & Ranks
+a3_cols = ['score_40', 'rank_40', 'score_30', 'rank_30', 'score_20', 'rank_20', 'score_10', 'rank_10']
+df_a3 = df_seci[a3_cols].round(2)
+df_a3.to_csv("replication_outputs/appendix_a3_simulated_scores_ranks.csv")
+print("\nExported Appendix A3: replication_outputs/appendix_a3_simulated_scores_ranks.csv")
 
-print("\nKendall Tau rank correlations vs baseline:")
+# A4: Weights
+pd.DataFrame(weights_table).to_csv("replication_outputs/appendix_a4_weights.csv", index=False)
+print("Exported Appendix A4: replication_outputs/appendix_a4_weights.csv")
+
+# A5: Rank shifts & volatility
+df_a5 = df_seci[['rank_40', 'rank_10']].copy()
+df_a5['shift_40_to_10'] = df_a5['rank_40'] - df_a5['rank_10']
+rank_cols = [f'rank_{p}' for p in [40,30,20,10]]
+df_a5['rank_range'] = df_seci[rank_cols].max(axis=1) - df_seci[rank_cols].min(axis=1)
+df_a5['rank_std'] = df_seci[rank_cols].std(axis=1)
+df_a5.to_csv("replication_outputs/appendix_a5_rank_shifts_volatility.csv")
+print("Exported Appendix A5: replication_outputs/appendix_a5_rank_shifts_volatility.csv")
+
+# Example shifts
+print("\nKey state rank shifts (40% → 10% DISCOM):")
+print(df_a5.loc[['Punjab', 'Gujarat', 'Maharashtra', 'Tamil Nadu', 'Chhattisgarh']])
+
+# Kendall Tau
+print("\nKendall Tau vs baseline:")
 for p in [30,20,10]:
     tau, _ = kendalltau(df_seci['rank_40'], df_seci[f'rank_{p}'])
-    print(f"DISCOM {p}%: Tau = {tau:.3f}")
+    print(f"{p}% DISCOM: {tau:.3f}")
 
-print("\n=== Socio-economic Analysis ===")
+# Socio-economic analysis
 df_full = df_seci.join(df_socio).join(df_nfhs)
 
-# OLS (original score)
-X = df_full[['Literacy_pct', 'Forest_pct', 'Per_Capita_Income_thou', 'Poverty_pct', 'Industrial_Share_pct']].copy()
+# Main OLS
+X = df_full[['Literacy_pct', 'Forest_pct', 'Per_Capita_Income_thou', 'Poverty_pct', 'Industrial_Share_pct']]
 X = sm.add_constant(X)
 y = df_full['score_40']
-model = sm.OLS(y, X.dropna()).fit()
-print(model.summary().tables[1])  # Coefficients only
+model_main = sm.OLS(y, X.dropna()).fit()
+print("\nMain OLS Coefficients:")
+print(model_main.params.round(3))
 
-print("\nKey correlations:")
-print(df_full[['score_40', 'Literacy_pct', 'Forest_pct', 'Per_Capita_Income_thou']].corr())
+# Robustness: NFHS-5 human capital
+X_hc = df_full[['Mean_Years_Schooling', 'Women_10plus_Yrs_Schooling_pct', 'Households_Internet_pct', 'Forest_pct']]
+X_hc = sm.add_constant(X_hc)
+model_hc = sm.OLS(y, X_hc.dropna()).fit()
+print("\nRobustness OLS (NFHS-5 proxies):")
+print(model_hc.params.round(3))
 
-# Green Paradox mediation proxy
-corr_forest_lit = pearsonr(df_full['Forest_pct'], df_full['Literacy_pct'])[0]
-print(f"\nForest-Literacy correlation: {corr_forest_lit:.3f} (supports indirect effect)")
+# VIF check
+vif_data = pd.DataFrame()
+vif_data["feature"] = X.columns
+vif_data["VIF"] = [variance_inflation_factor(X.dropna().values, i) for i in range(len(X.columns))]
+print("\nVIF (multicollinearity check):")
+print(vif_data)
 
-print("\n=== Volatility Clustering (K-means k=3) ===")
-rank_cols = ['rank_40', 'rank_30', 'rank_20', 'rank_10']
-df_vol = df_full[rank_cols].copy()
-df_vol['range'] = df_vol.max(axis=1) - df_vol.min(axis=1)
-df_vol['std'] = df_vol[rank_cols].std(axis=1)
+# Mediation proxy
+print("\nForest → Literacy correlation (indirect effect proxy):", pearsonr(df_full['Forest_pct'], df_full['Literacy_pct'])[0].round(3))
+
+# Volatility clustering
+df_vol = df_seci[rank_cols].copy()
+df_vol['range'] = df_a5['rank_range']
+df_vol['std'] = df_a5['rank_std']
 kmeans = KMeans(n_clusters=3, random_state=42, n_init='auto').fit(df_vol[['range', 'std']])
 df_vol['cluster'] = kmeans.labels_
-print(df_vol.sort_values('std', ascending=False)[['cluster'] + rank_cols].head(10))
+print("\nTop high-volatility states:")
+print(df_vol.sort_values('std', ascending=False).head(10)[['cluster'] + rank_cols])
 
-print("\n=== Diagnostic Visual (SECI vs Literacy & Forest) ===")
-fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-ax[0].scatter(df_full['Literacy_pct'], df_full['score_40'], c='blue')
-ax[0].set_xlabel('Literacy (%)')
-ax[0].set_ylabel('Original SECI Score')
-ax[0].set_title('Human Capital Driver')
-for s in ['Kerala', 'Goa', 'Punjab', 'Bihar', 'Maharashtra']:
-    if s in df_full.index:
-        ax[0].text(df_full.loc[s, 'Literacy_pct']+0.5, df_full.loc[s, 'score_40'], s)
+# Interactive plots
+# 1. SECI vs Literacy & Forest (scatter with hover)
+fig1 = px.scatter(df_full.reset_index(), x='Literacy_pct', y='score_40', color='Forest_pct',
+                  hover_name='State', title="SECI Score vs Literacy (colored by Forest Cover)")
+fig1.write_html("replication_outputs/interactive_seci_vs_literacy_forest.html")
 
-ax[1].scatter(df_full['Forest_pct'], df_full['score_40'], c='green')
-ax[1].set_xlabel('Forest Cover (%)')
-ax[1].set_ylabel('Original SECI Score')
-ax[1].set_title('Green Paradox (Structural Barrier)')
-for s in ['Mizoram', 'Arunachal Pradesh', 'Tripura', 'Punjab', 'Gujarat']:
-    if s in df_full.index:
-        ax[1].text(df_full.loc[s, 'Forest_pct']+1, df_full.loc[s, 'score_40'], s)
+# 2. Rank changes over scenarios
+df_ranks_melt = df_seci[rank_cols + ['State']].reset_index().melt(id_vars='State', value_vars=rank_cols, var_name='Scenario', value_name='Rank')
+fig2 = px.line(df_ranks_melt, x='Scenario', y='Rank', color='State', title="Rank Trajectories Across DISCOM Weights")
+fig2.update_yaxes(autorange="reversed")
+fig2.write_html("replication_outputs/interactive_rank_trajectories.html")
 
-plt.tight_layout()
-plt.savefig('seci_diagnostic_scatter.png')
-plt.show()
+# 3. Robustness: Even redistribution scenario (example at 10%)
+excess_even = 0.30  # From 40% to 10%
+boost_even = excess_even / 5  # Spread to AAR, CEI, EE, ES, NI
+weights_even = {'DISCOM': 0.10, 'AAR': 0.15 + boost_even, 'CEI': 0.15 + boost_even,
+                'EE': 0.15 + boost_even, 'ES': 0.08 + boost_even, 'NI': 0.07 + boost_even}
+df_seci['score_10_even'] = df_seci.apply(calc_score, axis=1, weights=weights_even)
+df_seci['rank_10_even'] = df_seci['score_10_even'].rank(ascending=False).astype(int)
+tau_even, _ = kendalltau(df_seci['rank_40'], df_seci['rank_10_even'])
+print(f"\nRobustness (Even redistribution at 10% DISCOM) Tau: {tau_even:.3f}")
 
-print("\nReplication complete. All tables, shifts, regressions, clusters, and visual reproduced.")
+print("\n=== All enhancements complete ===")
+print("Outputs saved in replication_outputs/ folder:")
+print("- CSVs for Appendices A3–A5")
+print("- Interactive HTML plots (open in browser)")
+print("Upload this script + outputs folder to GitHub/Zenodo for full transparency.")
