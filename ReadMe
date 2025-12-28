@@ -3,4 +3,26 @@ Data Integrity: "Socio-economic data is verified against FSI 2021 and NITI Aayog
 Sample Clarity: "We explicitly distinguish between the simulation universe (N=28) and the regression sample (n=27) to avoid bias."
 Finding Transparency: "Contrary to bivariate correlations, Industrial Share is noted as non-significant in multivariate models; we prioritize Human Capital Depth as the primary explanatory variable."
 Data Availability: Public official sources linked in paper.
-License: CC-BY 4.0
+# Replication Package: Reassessing India’s State Energy and Climate Index (Round I)
+This repository fully replicates the sensitivity audit, rank volatility analysis, and socio-economic regressions in:
+Kamat et al. (2025) "Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways" (Ver2.0, 27-12-2025).
+
+## Requirements
+- Python 3.8+  
+- pandas, numpy, scipy, statsmodels, scikit-learn, plotly
+
+Install with:  
+`pip install pandas numpy scipy statsmodels scikit-learn plotly`
+
+## Usage
+1. Run the script:  
+   `python enhanced_replicate_seci_paper.py`
+2. All tables (Appendix A3–A5) and interactive plots will be generated in `replication_outputs/`.
+
+No external data files are needed — everything is embedded.
+
+## Contents
+- `enhanced_replicate_seci_paper.py`: Complete replication code.
+- `replication_outputs/`: Generated CSVs and interactive HTML visualisations.
+
+License: CC-BY-4.0 (or as per journal policy).
