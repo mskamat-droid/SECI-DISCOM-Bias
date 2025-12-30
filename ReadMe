@@ -1,28 +1,71 @@
-#Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways
-Data Integrity: "Socio-economic data is verified against FSI 2021 and NITI Aayog 2021 reports.
-Sample Clarity: "We explicitly distinguish between the simulation universe (N=28) and the regression sample (n=27) to avoid bias."
-Finding Transparency: "Contrary to bivariate correlations, Industrial Share is noted as non-significant in multivariate models; we prioritize Human Capital Depth as the primary explanatory variable."
-Data Availability: Public official sources linked in paper.
-# Replication Package: Reassessing India’s State Energy and Climate Index (Round I)
-This repository fully replicates the sensitivity audit, rank volatility analysis, and socio-economic regressions in:
-Kamat et al. (2025) "Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways" (Ver2.0, 27-12-2025).
-
 ## Requirements
 - Python 3.8+  
 - pandas, numpy, scipy, statsmodels, scikit-learn, plotly
+ Install with:  `pip install pandas numpy scipy statsmodels matplotlib, scikit-learn plotly`
+Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways
+Authors: Manoj S. Kamat¹,², Deepali Churi³, Manasvi Kamat⁴
+¹Professor, Srinivassa Sinai Dempo College (Autonomous), Bambolim, Goa, India
+²Corresponding author: mskamat@gmail.com
+³deepali0531@gmail.com
+⁴Professor, MES’s Vasant Joshi College of Commerce & Economics, Zuarinagar, Goa, India; manasvikamat@gmail.com
+Version: 3.0 (December 30, 2025)
+The paper conducts the first sensitivity audit and rank volatility analysis of India’s State Energy and Climate Index (SECI Round 1, 2022), identifying methodological biases (e.g., 40% weight on DISCOMs) and recommending recalibration for Net-Zero alignment. Key findings include high rank fragility (Kendall's τ < 0.80 below 20% DISCOM), literacy as an enabler (OLS β = 0.612, p < 0.01), and a "green paradox" via mediation analysis (95% indirect effect of forest cover through literacy).
+The repository supports full reproducibility of simulations, regressions, mediation, VIF diagnostics, and robustness checks (e.g., using NFHS-5 and GGI proxies).
+Zenodo DOI: 10.5281/zenodo.18076344
+GitHub: https://github.com/mskamat-droid/SECI-DISCOM-Bias
+Repository Structure
 
-Install with:  
-`pip install pandas numpy scipy statsmodels scikit-learn plotly`
+Reassessing India's SECI.pdf / Reassessing India's SECI.docx: The full paper manuscript (enhanced version).
+data/: Raw and processed data files (CSVs).
+seci_rankings.csv: Original SECI Round 1 scores and parameters for 28 states (n=28; source: NITI Aayog, 2022). Columns: Rank, States/UTs, DISCOM's Performance, Access affordability & reliability, Clean Energy Initiatives, Energy Efficiency, Env Sustainability, New Initiatives, SECI score.
+clean_socio_economic_data.csv: Socio-economic variables (~2019–2022) for regressions (n=27; missing Manipur due to data gaps). Columns: State, Per_Capita_Income_thou, Literacy_pct, Poverty_pct, Industrial_Share_pct, Forest_pct.
+nfhs5_human_capital_proxies.csv: NFHS-5 (2019–21) proxies for literacy/human capital robustness checks (n=27). Columns: State, Mean_Years_Schooling, Women_10plus_Yrs_Schooling_pct, Households_Internet_pct.
+ggi_proxy.csv: Good Governance Index (GGI) 2021 proxies for additional robustness (n=27). Columns: State, GGI_Group, GGI_Rank_In_Group, GGI_Proxy_Normalized (normalized 0–1 scale within groups for cross-comparison).
 
-## Usage
-1. Run the script:  
-   `python enhanced_replicate_seci_paper.py`
-2. All tables (Appendix A3–A5) and interactive plots will be generated in `replication_outputs/`.
+code/: Python scripts for replication.
+reproduce_all.py: Main script to run all analyses (simulations, OLS, mediation, VIF, robustness). Outputs tables/figures to replication_outputs/.
+Other helpers (e.g., for fragility audits, Kendall's τ calculations).
 
-No external data files are needed — everything is embedded.
+replication_outputs/: Generated results (e.g., tables as CSVs, figures as PNGs). Empty initially; populated by running code.
+README.md: This file.
+requirements.txt: Python dependencies (e.g., pandas, statsmodels, scipy, matplotlib).
 
-## Contents
-- `enhanced_replicate_seci_paper.py`: Complete replication code.
-- `replication_outputs/`: Generated CSVs and interactive HTML visualisations.
+How to Reproduce the Results
 
-License: CC-BY-4.0 (or as per journal policy).
+Environment Setup:
+Python 3.8+ (tested on 3.12).
+Install dependencies: pip install -r requirements.txt (includes numpy, pandas, scipy, statsmodels, matplotlib, scikit-learn for mediation/VIF).
+
+Running the Code:
+Execute python code/reproduce_all.py.
+This loads CSVs from data/.
+Performs:
+Simulations: Weight stress tests (40%, 30%, 20%, 10% DISCOM; focused redistribution to CEI/EE/ES). Outputs Table A3 (rankings/scores), A4 (weights), A5 (shifts/clusters via K-means k=3).
+Regressions: OLS on SECI score vs. socio-economic vars (n=27). Outputs β coefficients (e.g., literacy=0.612, p<0.01).
+Mediation: Forest cover → Literacy → SECI (95% indirect effect).
+Diagnostics: VIF (<4 for all vars, e.g., Poverty_pct=3.74).
+Robustness: Re-run OLS with NFHS-5 proxies (stronger literacy effects) and GGI proxies (positive governance β).
+
+Generates figures (e.g., volatility heatmaps, mediation paths) and tables in replication_outputs/.
+
+All results match paper values exactly (e.g., τ=0.910 at 30%, 0.815 at 20%, 0.735 at 10%; Punjab drop 4→19 at 10%).
+
+Notes on Data:
+n=28 for simulations (all states from seci_rankings.csv, excluding UTs).
+n=27 for regressions (Manipur missing in socio_economic_data.csv, nfhs5_human_capital_proxies.csv, ggi_proxy.csv due to source gaps).
+Proxies: NFHS-5 for literacy sensitivity; GGI normalized for governance robustness.
+
+Verification:
+Independently audited: Code runs error-free; outputs verifiable against paper (e.g., exact β, τ, clusters).
+For custom runs: Modify weights/thresholds in reproduce_all.py (e.g., τ cutoff=0.80).
+
+
+Citation
+Please cite as:
+Kamat, M. S., Churi, D., & Kamat, M. (2025). Reassessing India’s State Energy and Climate Index: Addressing Bias for Aligned Net-Zero Pathways. Zenodo. https://doi.org/10.5281/zenodo.18076344
+License
+MIT License (open for reuse with attribution). See LICENSE file.
+Contact
+For issues or requests: mskamat@gmail.com.
+Acknowledgements: Seminar feedback incorporated; errors ours. No funding/COI.
+Updated: December 30, 2025
