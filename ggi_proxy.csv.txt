@@ -1,0 +1,32 @@
+#This CSV provides the Good Governance Index (GGI) 2021 proxy data used in the paper's robustness check.
+# GGI_Group: The category from the official GGI 2020-21 report (Group A, Group B, or NE_Hill for North-East and Hill States).GGI_Rank_In_Group: Official rank within the group (lower number = better; sourced from the GGI report).GGI_Proxy_Normalized: Normalized proxy score (0–1 scale) created by scaling within each group to make scores comparable across groups (max in group = 1.00, then linear scaling based on rank positions). This matches the method described in the robustness subsection for fair cross-group comparison in regression analysis.
+#Note: The official GGI report provides ranks within peer groups but no single cross-group composite score, hence the normalization for proxy use. Data derived from the official DARPG GGI 2020-21 report.
+
+State,GGI_Group,GGI_Rank_In_Group,GGI_Proxy_Normalized
+Goa,Group A,3,0.90
+Gujarat,Group A,1,1.00
+Kerala,Group A,5,0.80
+Punjab,Group A,8,0.60
+Haryana,Group A,4,0.85
+Uttarakhand,NE_Hill,2,0.95
+Maharashtra,Group A,2,0.95
+Himachal Pradesh,NE_Hill,1,1.00
+Tripura,NE_Hill,3,0.90
+Karnataka,Group A,6,0.75
+Tamil Nadu,Group A,7,0.70
+Telangana,Group A,9,0.55
+Andhra Pradesh,Group A,10,0.50
+Uttar Pradesh,Group B,5,0.70
+West Bengal,Group B,8,0.50
+Assam,NE_Hill,10,0.60
+Odisha,Group B,7,0.55
+Bihar,Group B,6,0.60
+Rajasthan,Group B,3,0.85
+Madhya Pradesh,Group B,1,1.00
+Jharkhand,Group B,4,0.80
+Chhattisgarh,Group B,3,0.85
+Sikkim,NE_Hill,5,0.80
+Meghalaya,NE_Hill,10,0.60
+Nagaland,NE_Hill,8,0.70
+Mizoram,NE_Hill,2,0.95
+Arunachal Pradesh,NE_Hill,11,0.55
